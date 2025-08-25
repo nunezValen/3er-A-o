@@ -291,8 +291,8 @@ int libres = 5;
 ```python
 process instancia[id:0..N]{ 
     <await libres > 0; libres-->
-    pop(cola)
+    instancia = cola.pop;
     //usa la instancia
-    <push(cola); libre++>
+    <cola.push(instancia); libre++>
 }
 ```

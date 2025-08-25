@@ -1,157 +1,114 @@
-# Variables compartidas
+## Practica 1
 
-## Explicacion practica 1
+1. Para el siguiente programa concurrente suponga que todas las variables están inicializadas en
+0 antes de empezar. Indique cual/es de las siguientes opciones son verdaderas:
+a) En algún caso el valor de x al terminar el programa es 56.
+b) En algún caso el valor de x al terminar el programa es 22.
+c) En algún caso el valor de x al terminar el programa es 23.
 
-Ejercicios de historias posibles: Es solo ver los distintos resultados y caminos que pueden tener dos procesos
+### P1:
+```
+if (x = 0){
+   1.1 y:= 4*2; 
+    1.2 x:= y + 2; 
+}
+```
 
-### Forma general del await
-La logica del await es uno chequea la condicion, si no se cumple sale y vuelve a chequear. Cuando la condicion es verdadera y pasa a ejecutar las sentencias la condicion no puede pasar a ser falsa hasta que no se completen todas las sentencias. Es **atomico**
+### P2:
+```
+If (x > 0){
+    2.1 x:= x + 1
+} 
+```
 
-### Ejemplo 2
-Se tiene un salon con 4 puertas por donde entran alumnos a un examen. Cada puerta lleva la cuenta de los alumnos que entraron por ella y a su vez se lleva cuenta total de personas en el salón. 
-**Debemos identificar que son procesos y cuales variables compartidas**
-1. La variable que cuenta la cantidad de alumnos que pasa por cada puerta.
-2. El proceso de cada puerta
+### P3:
+``` 3.1     3.2    3.3
+x:= (x*3) + (x*2) + 1;
+```
 
-quedaria algo así:
+#### Respuesta: 
+
+##### Caso 1:
+p1,p2,p3: X=56
+a = verdadero
+
+##### Caso 2:
+
+para que de 22 hay que hacer
+3.1, 1.1,1.2,3.2,3.3, 2.1 =  x=22
+
+calculo: 
+3*0, y=8, x=10, x=21, x=22
+
+entonces b = verdadero
+
+##### Caso 3:
+C : verdadero
+
+3.1, 1.1, 1.2, 2.1, 3.2, 3.3 = x=23
+
+
+
+
+2. Realice una solución concurrente de grano grueso (utilizando <> y/o <await B; S>) para el
+siguiente problema. Dado un número N verifique cuántas veces aparece ese número en un
+arreglo de longitud M. Escriba las pre-condiciones que considere necesarias.
+
+
+Idea: La idea principal seria subdividir el arreglo por la cantidad de procesos y darle una parte del arreglo a cada proceso para que realice su busqueda, por cada elemento que encuentre igual a N lo sume a una variable compartida, por lo cual necesitaremos atomicidad.
+
+Pre condiciones: El arreglo sera divisible por la cantidad de procesos. 
+
+
+##### Codigo
+
 ```
 int total = 0;
+int vector[0..M];
+boolean libre = true; 
+int N = 33;
 
-process puerta[id:0..3]{
-    int parcial = 0;
-    while true{
-        *esperar llegada*
-        parcial = parcial +1;
-        < total = total +1 > no tengo los simbolitos de menor e igual.
+chunks = M div J
+
+
+process buscador[id:0..J]{
+
+    inicio = chunks * id - chunks;
+    fin = chunks * id - 1;
+
+
+    int total_proc = 0;
+    for i : inicio...fin{
+        if (vector[i] == N){
+            total_proc := total_proc+1
+        }
+    }
+    <await libre; libre = false>
+    //Seccion critica
+    total = total + total_proc
+    libre = true
+}
+```
+
+
+##### Otra solucion
+```
+int total = 0;
+int vector[0..M];
+boolean libre = true; 
+int N = 33;
+
+chunks = M div J
+
+process buscador[id:0..J]{
+
+    inicio = chunks * id - chunks;
+    fin = chunks * id - 1;
+
+    for i : inicio...fin{
+        if (vector[i] == N){
+            <total = total +1>
+        }
     }
 }
-```
-
-<> significa que la operacion es atomica
-
-
-## Ejemplo 3
-Hay un docente que les debe tomar examen oral a 30 alumnos(uno a la vez) de acuerdo al orden dado por el identificador del proceso
-
-**Procesos** : alumnos y profesor. 
-**Variables Compartidas** : No hay.
-
-```
-int actual = -1;
-Process alumno [id:0..29]
-{
-    <await ( actual == id )>
-    //Rinde
-    //Espera a que termine
-}
-
-Porcess Docente
-{
-    for i = 0..29
-    {
-        actual = i
-        //Toma examen
-        //Avisa a i que termino
-    }
-}
-
-```
-
-#### Ahora debemos sincronizar la salida
-
-```
-
-bool listo = false;
-int actual = -1;
-
-Process alumno [id:0..29]
-{
-    <await ( actual == id )>
-    //Rinde
-    <await listo ;>
-     listo = false; 
-}
-
-Porcess Docente
-{
-    for i = 0..29
-    {
-        actual = i
-        //Toma examen
-        <listo = true;>
-        <await (not listo)> //Tengo que esperar que el alumno se vaya. Es necesario hacerlo con <>
-    }
-}
-
-```
-
-**Qué pasa si el alumno no llego?**
-Tengo que esperar a que el alumno llegue (Barrera entre dos procesos)
-
-```
-
-bool listo = false;
-int actual = -1;
-ok = false;
-
-Process alumno [id:0..29]
-{
-    <await ( actual == id )>
-    ok = true;
-    //Rinde
-    <await listo ;>
-     listo = false; 
-}
-
-Porcess Docente
-{
-    for i = 0..29
-    {
-        actual = i
-        <await ok>
-        ok=false;
-        //toma examen
-        <listo = true;>
-        <await (not listo)> //Tengo que esperar que el alumno se vaya. Es necesario hacerlo con <>
-    }
-}
-
-```
-
-
-### Ejemplo 4
-Un cajero automatico debe ser usado por N personas de a uno a la vez y segun el orden de llegada al mismo. En caso de que llegue una persona anciana, la deben dejar ubicarse al principio de la cola.
-
-Exclusion mutua selectiva.
-
-```
-
-Process persona [id:0..n-1]{
-    //Si el cajero no esta libre debe encolarse. *La primer condicion a chequear es la condicion por la cual me voy a dormir, por eso veo si me tengo que encolar en lugar de enconlarme directamente* 
-    //Usar el cajero
-    //Liberar el cajero
-}
-
-```
-
-Tengo que tener una cola con prioridad que al hacer pop me de la persona con mas prioridad
-
-```
-
-colaEspecial C;
-int siguiente = -1;
-
-process persona[id:0..n-1]{
-    int edad = ... ;
-    <If (siguiente == -1 siguiente = id
-    else agregar(C,edad,id))>
-
-    <await(siguiente == id)>
-    
-    //usa cajero
-    
-    <if empty (C) siguiente = -1
-    else siguiente = sacar(C)>
-}
-
 ```

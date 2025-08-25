@@ -247,13 +247,13 @@ Process Consumidor[id:0..P]
 ##### Otra solucion (Me la dijo el profe pero siento que es re chancha porque haces atomico todo)
 
 
-```
+``` python
 int cant = 0; 
 int pri_ocupada = 0;
 int pri_vacia = 0; 
 int buffer[N];
 ```
-```
+``` python
 Process Productor[id:0..C]
 { while (true)
  { produce elemento
@@ -263,7 +263,7 @@ Process Productor[id:0..C]
  }
 }
 ```
-```
+``` python
 Process Consumidor[id:0..P]
 { while (true)
  { <await (cant > 0); cant-- 
@@ -271,5 +271,28 @@ Process Consumidor[id:0..P]
  pri_ocupada = (pri_ocupada + 1) mod N;>
  consume elemento
  }
+}
+```
+
+
+
+
+
+### 4. Resolver con SENTENCIAS AWAIT (<> y <await B; S>). Un sistema operativo mantiene 5 instancias de un recurso almacenadas en una cola, cuando un proceso necesita usar una instancia del recurso la saca de la cola, la usa y cuando termina de usarla la vuelve a depositar. 
+
+
+
+```python
+Queue cola;
+int libres = 5;
+```
+
+
+```python
+process instancia[id:0..N]{ 
+    <await libres > 0; libres-->
+    pop(cola)
+    //usa la instancia
+    <push(cola); libre++>
 }
 ```

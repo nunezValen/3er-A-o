@@ -6,7 +6,7 @@
 #### c) En algún caso el valor de x al terminar el programa es 23.
 
 ### P1:
-```
+```python
 if (x = 0){
    1.1 y:= 4*2; 
     1.2 x:= y + 2; 
@@ -14,14 +14,14 @@ if (x = 0){
 ```
 
 ### P2:
-```
+```python
 If (x > 0){
     2.1 x:= x + 1
 } 
 ```
 
 ### P3:
-``` 3.1     3.2    3.3
+```python 3.1     3.2    3.3
 x:= (x*3) + (x*2) + 1;
 ```
 
@@ -59,7 +59,7 @@ Pre condiciones: El arreglo sera divisible por la cantidad de procesos.
 
 ##### Solucion (Se la mostré al ayudante y le gustó más está y dijo que estaba perfect :D )
 
-```
+```python
 int total = 0;
 int vector[0..M];
 boolean libre = true; 
@@ -89,7 +89,7 @@ process buscador[id:0..J]{
 
 
 ##### Otra solucion (Tambien esta bien pero la otra es mejor)
-```
+```python
 int total = 0;
 int vector[0..M];
 boolean libre = true; 
@@ -112,13 +112,13 @@ process buscador[id:0..J]{
 
 ### 3. Dada la siguiente solución de grano grueso: #### a) Indicar si el siguiente código funciona para resolver el problema de Productor/Consumidor con un buffer de tamaño N. En caso de no funcionar, debe hacer las modificaciones necesarias.
 
-```
+```python
 int cant = 0; 
 int pri_ocupada = 0;
 int pri_vacia = 0; 
 int buffer[N];
 ```
-```
+```python
 Process Productor::
 { while (true)
  { produce elemento
@@ -128,7 +128,7 @@ Process Productor::
  }
 }
 ```
-```
+```python
 Process Consumidor::
 { while (true)
  { <await (cant > 0); cant-- >
@@ -145,13 +145,13 @@ Tambien puede suceder que este lleno, el consumidor consuma y antes que lo saque
 
 ##### Solucion 1: Solo mover el piquito ">"
 
-```
+```python
 int cant = 0; 
 int pri_ocupada = 0;
 int pri_vacia = 0; 
 int buffer[N];
 ```
-```
+```python
 Process Productor::
 { while (true)
  { produce elemento
@@ -161,7 +161,7 @@ Process Productor::
  }
 }
 ```
-```
+```python
 Process Consumidor::
 { while (true)
  { <await (cant > 0); cant-- 
@@ -176,14 +176,14 @@ Process Consumidor::
 ##### Otra solucion(boolean), más quilombo pero el profe dijo que estaba bien:
 
 
-```
+```python
 int cant = 0; 
 int pri_ocupada = 0;
 int pri_vacia = 0; 
 int buffer[N];
 boolean puede = true;
 ```
-```
+```python
 Process Productor::
 { while (true)
  { produce elemento
@@ -194,7 +194,7 @@ Process Productor::
  }
 }
 ```
-```
+```python
 Process Consumidor::
 { while (true)
  { <await (cant > 0) and puede;puede = false; cant--> 
@@ -212,14 +212,14 @@ Process Consumidor::
 
 ##### Solucion (Esta le gusto al profe)
 
-```
+``` python
 int cant = 0; 
 int pri_ocupada = 0;
 int pri_vacia = 0; 
 int buffer[N];
 boolean puede = true;
 ```
-```
+```python
 Process Productor[id:0..C]
 { while (true)
  { produce elemento
@@ -230,7 +230,7 @@ Process Productor[id:0..C]
  }
 }
 ```
-```
+```python
 Process Consumidor[id:0..P]
 { while (true)
  { <await (cant > 0) and puede;puede = false; cant--> 
@@ -280,7 +280,7 @@ Process Consumidor[id:0..P]
 
 ### 4. Resolver con SENTENCIAS AWAIT (<> y <await B; S>). Un sistema operativo mantiene 5 instancias de un recurso almacenadas en una cola, cuando un proceso necesita usar una instancia del recurso la saca de la cola, la usa y cuando termina de usarla la vuelve a depositar. 
 
-
+#### Mi solucion, el profe dijo que estaba bien pero que es arriesgado, ya que dependes en la implementacion de la cola.
 
 ```python
 Queue cola;
@@ -296,3 +296,16 @@ process instancia[id:0..N]{
     <cola.push(instancia); libre++>
 }
 ```
+
+##### Otra solucion, el profe dijo que es mejor esta ya que no tenes el riesgo de que sucedan 2 pop a la vez, ya que al haber dos pop a la vez depende de como el lenguaje implemente la cola es si sacan el mismo elemento, diferente o ninguno.
+
+```python
+process instancia[id:0..N]{ 
+    <await cola.length > 0; instancia = cola.pop;>
+    //usa la instancia
+    <cola.push(instancia);>
+}
+```
+
+
+### 5.

@@ -308,4 +308,227 @@ process instancia[id:0..N]{
 ```
 
 
-### 5.
+### 5.En cada ítem debe realizar una solución concurrente de grano grueso (utilizando <> y/o <await B; S>) para el siguiente problema, teniendo en cuenta las condiciones indicadas en el item. Existen N personas que deben imprimir un trabajo cada una.
+
+#### a) Implemente una solución suponiendo que existe una única impresora compartida por todas las personas, y las mismas la deben usar de a una persona a la vez, sin importar el orden. Existe una función Imprimir(documento) llamada por la persona que simula el uso de la impresora. Sólo se deben usar los procesos que representan a las Personas. 
+#### b) Modifique la solución de (a) para el caso en que se deba respetar el orden de llegada.
+#### c) Modifique la solución de (a) para el caso en que se deba respetar el orden dado por el identificador del proceso (cuando está libre la impresora, de los procesos que han solicitado su uso la debe usar el que tenga menor identificador).
+#### d) Modifique la solución de (b) para el caso en que además hay un proceso Coordinador que le indica a cada persona que es su turno de usar la impresora. 
+
+#### a)
+
+```python
+boolean usandoImpresora = false
+```
+
+```python
+process persona[id:1..n]{
+    <await (not usandoImpresora); usandoImpresora = true>
+    imprimir(documento);
+    usandoImpresora = false;
+}
+```
+
+#### b)
+
+Es igual al ejemplo 4
+
+```python
+int siguiente = -1
+Queue cola
+```
+
+```python
+process persona[id: 1..n]{
+
+    // Si siguiente es -1 es porque no hay nadie usando la impresora, entonces la uso y pongo mi id como siguiente. Si no me encolo
+
+    <if (siguiente == -1) then siguiente = id else cola.queue(id)>
+
+    // Espero que siguiente sea mi id
+
+    <await (siguiente == id)>
+    
+    imprimir(documento)
+
+    // Si no hay nada más en la cola entonces queda libre, le pongo -1, si no hago pop del siguiente.
+    
+    <if (cola.isEmpty()) then siguiente = -1; else siguiente = cola.dequeue(id)>
+
+}
+```
+
+
+
+#### c) No se que cambiaria en la explicacion practica muestran que usan una cola especial, nada más. Entiendo que al usar el dequeue se saca el elemento de menor id
+
+```python
+int siguiente = -1
+Queue colaPrioridad;
+```
+
+```python
+
+process persona[id:1..n]{
+
+    // Si siguiente es -1 es porque no hay nadie usando la impresora, entonces la uso y pongo mi id como siguiente. Si no me encolo
+
+    <if (siguiente == -1) then siguiente = id else cola.queue(id)>
+
+    // Espero que siguiente sea mi id
+
+    <await (siguiente == id)>
+    
+    imprimir(documento)
+
+    // Si no hay nada más en la cola entonces queda libre, le pongo -1, si no hago pop del siguiente.
+    
+    <if (cola.isEmpty()) then siguiente = -1; else siguiente = cola.dequeue(id)>
+
+}
+
+
+```
+
+
+
+#### Otra solucion que se me ocurre para no depender de una cola de prioridad. Revisar con el ayudante
+
+//Supongo que los array arrancan en false
+
+```python
+int siguiente = -1
+boolean esperando[1..n]
+totalEsperando = 0
+```
+
+```python
+process persona[id:1..n]{
+
+    <if (siguiente == -1) then siguiente = id else esperando[id] = true; totalEsperando++>
+
+    <await (siguiente == id)>
+    
+    imprimir(documento)
+    
+    <if (totalEsperando == 0 then siguiente = -1; else {
+        for i = 0..n {
+            if(esperando[i]){
+                esperando[i] = false
+                siguiente = i;
+                totalEsperando--
+                break;
+            }
+        }
+    }>
+
+}
+```
+
+
+#### D)
+
+```python
+queue cola
+int siguiente
+boolean termine = true
+```
+
+
+```python
+
+process coordinador{
+    for i = 1..n {
+        <await termine; if (cola.isEmpty) then siguiente = -1; else siguiente = cola.dequeue()>
+    }
+}
+
+```
+
+```python
+process persona[id: 1..n]{
+
+
+    <if (siguiente == -1) then siguiente = id else cola.queue(id)>
+
+    <await (siguiente == id)>
+    
+    imprimir(documento)
+
+    termine = true
+
+}
+```
+
+
+
+### 6. Dada la siguiente solución para el Problema de la Sección Crítica entre dos procesos (suponiendo que tanto SC como SNC son segmentos de código finitos, es decir que terminan en algún momento), indicar si cumple con las 4 condiciones requeridas:
+
+```python
+int turno = 1;
+```
+
+```python
+Process SC1::
+{ while (true)
+ { while (turno == 2) skip;
+ SC;
+ turno = 2;
+ SNC;
+ }
+}
+
+```
+
+```python
+Process SC2::
+{ while (true)
+ { while (turno == 1) skip;
+ SC;
+ turno = 1;
+ SNC;
+ }
+}
+
+```
+
+### Propiedades:
+
+#### Exclusión mutua: A lo sumo un proceso está en su SC
+
+#### Ausencia de Deadlock (Livelock): si 2 o más procesos tratan de entrar a sus SC, al menos uno tendrá éxito.
+
+#### Ausencia de Demora Innecesaria: si un proceso trata de entrar a su SC y los otros están en sus SNC o terminaron, el primero no está impedido de entrar a su SC.
+
+#### Eventual Entrada: un proceso que intenta entrar a su SC tiene posibilidades de hacerlo (eventualmente lo hará)
+
+##### Respuesta: podemos ver que se cumple con la propiedad 1,2 y 4. Pero la 3(Ausencia de demora innecesaria) no se cumple, ya que se le impide al proceso ejecutar su seccion no critica a no ser que sea su turno. Una forma de solucionarlo seria quitando la SNC y ponerla antes de la condicion del while, en ambos procesos.
+
+```python
+Process SC1::
+{ while (true)
+ { 
+    SNC;
+    while (turno == 2) skip;
+    SC;
+    turno = 2;
+ }
+}
+
+```
+
+```python
+Process SC2::
+{ while (true)
+ { 
+    SNC;
+    while (turno == 1) skip;
+    SC;
+    turno = 1;
+ }
+}
+
+```
+
+
+### 7. Todavia no puedo, no dimos teoria 3

@@ -143,8 +143,8 @@ int siguiente = -1;
 
 process persona[id:0..n-1]{
     int edad = ... ;
-    <If (siguiente == -1 siguiente = id
-    else agregar(C,edad,id))>
+    <If (siguiente == -1); siguiente = id
+    else agregar(C,edad,id)>
 
     <await(siguiente == id)>
     

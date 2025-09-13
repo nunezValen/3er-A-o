@@ -152,3 +152,90 @@ process controlador [i=1..4]{
     V(mutex)
 }
 ```
+
+
+#### 3. Un sistema operativo mantiene 5 instancias de un recurso almacenadas en una cola.  Además, existen P procesos que necesitan usar una instancia del recurso. Para eso, deben  sacar la instancia de la cola antes de usarla. Una vez usada, la instancia debe ser encolada nuevamente para su reúso.  
+
+```python
+sem mutex = 5; sacando = 1;
+Cola cola;
+
+
+process proceso[i:1..P]{
+    
+    P(mutex)
+    P(sacando) # Necesito sacando para que no intenten sacar la misma al mismo tiempo
+    instancia  =  cola.pop()
+    V(sacando)
+    # usar instancia
+    cola.push(instancia)
+    V(mutex)
+
+}
+
+```
+
+
+#### 4. Suponga que existe una BD que puede ser accedida por 6 usuarios como máximo al  mismo tiempo. Además, los usuarios se clasifican como usuarios de prioridad alta y  usuarios de prioridad baja. Por último, la BD tiene la siguiente restricción: 
+• no puede haber más de 4 usuarios con prioridad alta al mismo tiempo usando la BD. 
+• no puede haber más de 5 usuarios con prioridad baja al mismo tiempo usando la BD. 
+Indique si la solución presentada es la más adecuada. Justifique la respuesta. 
+
+```pascal
+Var
+sem: semaphoro := 6;
+alta: semaphoro := 4;
+baja: semaphoro := 5
+```
+<table style="width:100%">
+   <thead>
+        <tr>
+            <th>
+                Process Usuario-Alta [I:1..L]:: 
+            </th>
+            <th>
+                Process Usuario-Baja [I:1..K]:: 
+            </th>
+        </tr>
+   </thead>
+<tbody>
+<tr>
+ <td rowspan=4>
+
+```cpp
+ { P (sem);
+ P (alta);
+ //usa la BD
+ V(sem);
+ V(alta);
+ }
+```
+
+</td>
+ <td rowspan=4>
+
+```cpp
+{ P (sem);
+ P (baja);
+//usa la BD
+ V(sem);
+ V(baja);
+ }
+```
+</td>
+</td>
+</tr>
+</tbody>
+</table>
+
+
+##### Respuesta
+
+Estan mal declaradas las variables
+```python
+sem sem = 6;
+sem alta = 4;
+sem baja = 5;
+```
+
+Y ademas se debería hacer primero p(alta) o p(baja) y luego p(sem), ya que si no podría ocurrir que usuarios estén bloqueando la entrada a la BD sin poder acceder porque su prioridad alcanzo el limite y estarían evitando que otros de distinta prioridad puedan acceder (cuando deberían poder hacerlo porque su prioridad no alcanzo el máximo) Ej.: 6 de alta bloquean la BD pero solo 4 pudieron acceder a ella y los otros 2 no pueden hacerlo pero aun asi tienen la BD bloqueada evitando que entren 2 de prioridad baja (que deberían poder). No se maximiza la concurrencia y hay demora innecesaria.

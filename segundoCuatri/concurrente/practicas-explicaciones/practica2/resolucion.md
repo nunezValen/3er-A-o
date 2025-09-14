@@ -239,3 +239,294 @@ sem baja = 5;
 ```
 
 Y ademas se debería hacer primero p(alta) o p(baja) y luego p(sem), ya que si no podría ocurrir que usuarios estén bloqueando la entrada a la BD sin poder acceder porque su prioridad alcanzo el limite y estarían evitando que otros de distinta prioridad puedan acceder (cuando deberían poder hacerlo porque su prioridad no alcanzo el máximo) Ej.: 6 de alta bloquean la BD pero solo 4 pudieron acceder a ella y los otros 2 no pueden hacerlo pero aun asi tienen la BD bloqueada evitando que entren 2 de prioridad baja (que deberían poder). No se maximiza la concurrencia y hay demora innecesaria.
+
+
+#### 5. En una empresa de logística de paquetes existe una sala de contenedores donde se  preparan las entregas. Cada contenedor puede almacenar un paquete y la sala cuenta con  capacidad para N contenedores. Resuelva considerando las siguientes situaciones: 
+a) La empresa cuenta con 2 empleados: un empleado Preparador que se ocupa de  preparar los paquetes y dejarlos en los contenedores; un empelado Entregador  que se ocupa de tomar los paquetes de los contenedores y realizar la entregas.  Tanto el Preparador como el Entregador trabajan de a un paquete por vez. 
+
+```python
+Paquete paquetes[N]
+sem vacio = 1;
+sem lleno = 0;
+```
+
+```python
+Process preparador {
+    while (true){
+        # Preparar paquete
+        P(vacio)
+        paquetes.push(paquete)
+        V(lleno)
+    }
+}
+```
+
+```python
+Process entregador {
+    while (true){
+        P(lleno)
+        paquete = paquetes.pop()
+        V(vacio)
+        # Entregar paquete
+    }
+}
+```
+
+
+
+b) Modifique la solución a) para el caso en que haya P empleados Preparadores. 
+
+```python
+Paquete paquetes[N]
+sem vacio = 1;
+sem lleno = 0;
+sem mutexPreparador = 1;
+```
+
+```python
+Process preparador {
+    while (true){
+        # Preparar paquete
+        P(vacio)
+        P(mutexPreparador)
+        paquetes.push(paquete)
+        P(mutexPreparador)
+        V(lleno)
+    }
+}
+```
+
+```python
+Process entregador {
+    while (true){
+        P(lleno)
+        paquete = paquetes.pop()
+        V(vacio)
+        # Entregar paquete
+    }
+}
+```
+
+
+
+
+c) Modifique la solución a) para el caso en que haya E empleados Entregadores. 
+
+```python
+Paquete paquetes[N]
+sem vacio = 1;
+sem lleno = 0;
+sem mutexEntregador = 1;
+```
+
+```python
+Process preparador {
+    while (true){
+        # Preparar paquete
+        P(vacio)
+        paquetes.push(paquete)
+        V(lleno)
+    }
+}
+```
+
+```python
+Process entregador {
+    while (true){
+        P(lleno)
+        P(mutexEntregador)
+        paquete = paquetes.pop()
+        V(mutexEntregador)
+        V(vacio)
+        # Entregar paquete
+    }
+}
+```
+
+
+
+
+d) Modifique la solución a) para el caso en que haya P empleados Preparadores y E 
+empleadores Entregadores. 
+
+```python
+Paquete paquetes[N]
+sem vacio = 1;
+sem lleno = 0;
+sem mutexPreparador = 1;
+sem mutexEntregador = 1:
+```
+
+```python
+Process preparador {
+    while (true){
+        # Preparar paquete
+        P(vacio)
+        P(mutexPreparador)
+        paquetes.push(paquete)
+        P(mutexPreparador)
+        V(lleno)
+    }
+}
+```
+```python
+Process entregador {
+    while (true){
+        P(lleno)
+        P(mutexEntregador)
+        paquete = paquetes.pop()
+        V(mutexEntregador)
+        V(vacio)
+        # Entregar paquete
+    }
+}
+```
+
+
+#### 6. Existen N personas que deben imprimir un trabajo cada una. Resolver cada ítem usando semáforos: 
+a) Implemente una solución suponiendo que existe una única impresora compartida por  todas las personas, y las mismas la deben usar de a una persona a la vez, sin importar  el orden. Existe una función Imprimir(documento) llamada por la persona que simula el  uso de la impresora. Sólo se deben usar los procesos que representan a las Personas.
+
+```python
+sem mutex = 1;
+
+Process persona [id:1..N]{
+    P(mutex)
+    Imprimir(Documento)
+    V(mutex)
+}
+```
+
+b) Modifique la solución de (a) para el caso en que se deba respetar el orden de llegada. 
+
+
+c) Modifique la solución de (a) para el caso en que se deba respetar estrictamente el orden dado por el identificador del proceso (la persona X no puede usar la impresora hasta que no haya terminado de usarla la persona X-1). 
+
+d) Modifique la solución de (b) para el caso en que además hay un proceso Coordinador que le indica a cada persona que es su turno de usar la impresora. 
+
+e) Modificar la solución (d) para el caso en que sean 5 impresoras. El coordinador le indica a la persona cuando puede usar una impresora, y cual debe usar. 
+
+```cpp
+colaLlegada c;
+sem espera[P] = ([P] 0);
+sem mutex = 1;
+bool libre = true;
+
+Process persona [i:0..P-1]{
+    Documento documento;
+    int aux;
+    P(mutex);
+    if (libre){
+        libre = false;
+        V(mutex);
+    }
+    else {
+        c.push(i);
+        V(mutex);
+        P(espera[i]);
+    }
+    Imprimir(documento);
+    P(mutex);
+    if (c.isEmpty()){
+        libre = true;
+    }
+    else {
+        aux = c.pop();
+        V(espera[aux]);
+    }
+    V(mutex);
+}
+```
+
+c)
+
+```cpp
+int proximo = 0;
+sem espera[P] = ([P] 0);
+
+Process persona [i:0..P-1]{
+    Documento documento;
+    if (proximo != i){ //se podria sacar este if pero se deberia inicializar el semaforo del proceso con i=0 en 1
+        P(espera[i]);
+    }
+    Imprimir(documento);
+    proximo++;
+    V(espera[proximo]);
+}
+```
+
+d)
+
+```cpp
+sem espera[P] = ([P] 0);
+sem mutex = 1;
+sem listo = 0;
+sem llena = 0;
+colaLlegada c;
+
+Process persona [i:0..P-1]{
+    Documento documento;
+    P(mutex);
+    c.push(i);
+    V(mutex);
+    V(llena);
+    P(espera[i]);
+    Imprimir(documento);
+    V(listo);
+}
+
+Process coordinador{
+    int aux;
+    for i = 0..P-1{
+        P(llena);
+        P(mutex);
+        aux = c.pop();
+        V(mutex);
+        V(espera[aux]);
+        P(listo);
+    }
+}
+```
+
+e)
+
+```cpp
+sem espera[P] = ([P] 0);
+sem mutex = 1;
+sem llena = 0;
+colaLlegada c;
+int impresoras[5] = {0,1,2,3,4};
+sem cantImpres = 5;
+int impersona[P] = ([P] -1);
+sem mutexImpresoras = 1;
+
+Process persona[i:0..P-1]{
+    Documento documento;
+    P(mutex);
+    c.push(i);
+    V(mutex);
+    V(llena);
+    P(espera[i]);
+    Imprimir(documento, impersona[i]);
+    P(mutexImpresoras);
+    impresoras.push(impersona[i]);
+    V(mutexImpresoras);
+    V(impresoras);
+}
+
+Process coordinador{
+    int aux;
+    int impaux;
+    for i = 0..P-1{
+        P(llena);
+        P(mutex);
+        aux = c.pop();
+        V(mutex);
+        P(impresoras);
+        P(mutexImpresoras);
+        impaux = impresoras.pop();
+        V(mutexImpresoras);
+        impersona[aux] = impaux;
+        V(espera[aux]);
+    }
+}
+```

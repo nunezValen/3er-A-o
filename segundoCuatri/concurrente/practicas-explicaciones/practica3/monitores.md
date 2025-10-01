@@ -639,3 +639,5 @@ Monitor Cancha[id: 1..2]{
 }
 
 ```
+
+# CONSULTAR QUE PASA SI HAGO SIGNAL EN COLAS VACIAS.

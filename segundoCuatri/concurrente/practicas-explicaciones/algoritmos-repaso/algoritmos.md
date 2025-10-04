@@ -183,3 +183,272 @@ Process Escalador[id: 0..29]
     if (miTurno < 29) V (espera[miTurno+1]);
 }
 ```
+
+
+# Monitores
+
+## Orden de llegada
+
+```java
+Process Persona [id: 0..N-1]
+{ Cajero.Pasar ();
+ UsarCajero();
+ Cajero.Salir();
+}
+
+Monitor Cajero{
+    bool libre = true;
+    cond cola;
+    int esperando = 0;
+
+    Procedure Pasar ()
+    { if (not libre) { esperando ++;
+    wait (cola);
+    }
+    else libre = false;
+    }
+    Procedure Salir ()
+    { if (esperando > 0 ) { esperando --;
+    signal (cola);
+    }
+    else libre = true;
+    }
+}
+
+```
+
+## Por prioridad
+```java
+
+Process Persona [id: 0..N-1]
+{ bool edad = ….;
+
+ Cajero.Pasar (id, edad);
+ UsarCajero();
+ Cajero.Salir();
+}
+
+
+Monitor Cajero{
+    bool libre = true;
+    cond espera[N];
+    int idAux, esperando = 0; colaOrdenada fila;
+
+    Procedure Pasar (idP, edad: in int)
+    { if (not libre) { push(fila, idP, edad);
+    esperando ++;
+    wait (espera[idP]); // Espero que me levanten a mi unicamente
+    }
+    else libre = false;
+    }
+    Procedure Salir ()
+    { if (esperando > 0 ) { esperando --;
+    pop (fila, idAux);
+    signal (espera[idAux]);
+    }
+    else libre = true;
+    }
+}
+
+```
+
+## Cliente - Servidor(ejercicio 4) que dios se apiade
+
+```java
+
+Process Cliente[id: 0..N-1]
+{ int idE;
+ text papel, res;
+
+ Banco.llegada(idE);
+ Escritorio[idE].atención(papel, res);
+}
+
+Process Empleado[id: 0..2]
+{ text datos;
+
+ while (true)
+ { Banco.próximo(id);
+ Escritorio[id].esperarDatos(datos);
+ res = resolver solicitud en base a datos
+ Escritorio[id].enviarResultado(res);
+ }
+}
+
+
+Monitor Banco {
+ cola elibres;
+ cond esperaC;
+ int esperando = 0, cantLibres = 0;
+
+ Procedure Llegada(idE: out int)
+ { if (cantLibres == 0)
+ { esperando ++;
+ wait (esperaC);
+ }
+ else cantLibres--;
+ pop(elibres, idE);
+ }
+Procedure Próximo(idE: in int)
+ { push(elibres, idE);
+ if (esperando > 0 )
+ { esperando --;
+ signal (esperaC);
+ }
+ else cantLibres++;
+ }
+}
+
+
+
+Monitor Escritorio[id: 0..2] {
+ cond vcCliente, vcEmpleado;
+ text datos, resultados;
+ boolean listo = false;
+
+ Procedure Atención(D: in text; R: out text)
+ { datos = D;
+ listo = true;
+ signal (vcEmpleado);
+ wait (vcCliente);
+ R = resultados;
+ signal (vcEmpleado);
+ }
+Procedure Esperardatos(D: out text)
+ { if (not listo) wait (vcEmpleado);
+ D = datos;
+ }
+Procedure EnviarResultados(R: in text)
+ { resultados = R;
+ signal (vcCliente);
+ wait (vcEmpleado);
+ listo = false;
+ }
+}
+
+
+```
+
+
+## Barreras
+
+```java
+Process Jugador[id: 0..21]
+{ Cancha.llegada(); 
+}
+
+Process Partido
+{ Cancha. Iniciar();
+ delay (90minutos); //se juega el partido
+ Cancha.Terminar();
+}
+
+Monitor Cancha
+{ int cant = 0;
+ cond espera, inicio;
+ Procedure llegada ()
+ { cant ++;
+ if (cant == 22) signal (inicio);
+ wait (espera);
+ }
+ Procedure Iniciar ()
+ { if (cant < 22) wait (inicio);
+ }
+ Procedure Terminar ()
+ { signal_all(espera);
+ }
+}
+
+
+```
+
+
+## Cliente servidor pero con un solo servidor
+
+```java
+Process Cliente [id: 0..N-1]
+{ text S, res;
+while (true)
+{ --generar secuencia S
+Admin.Pedido(id, S, res);
+}
+}
+
+Process Servidor
+{ text sec, res;
+int aux;
+while (true)
+{ Admin.Sig(aux, sec);
+res = AnalizarSec(sec);
+Admin.Resultado(aux, res);
+}
+}
+
+
+Monitor Admin {
+ Cola C;
+ Cond espera;
+ Cond HayPedido;
+ text res[N];
+ Procedure Pedido (IdC: in int; S: in text; R: out text)
+ { push (C, (idC,S) );
+ signal (HayPedido);
+ wait (espera);
+ R = res[idC];
+ }
+ Procedure Sig (IdC: out int; S: out text)
+ { if (empty (C)) wait (HayPedido);
+ pop (C, (IdC, S));
+ }
+ Procedure Resultado (IdC: in int; R: in text)
+ { res[IdC] = R;
+ signal (espera);
+ }
+}
+```
+
+
+## Cliente servidor pero con varios servidores
+
+```java
+Process Cliente [id: 0..N-1]
+{ text S, res;
+while (true)
+{ --generar secuencia S
+Admin.Pedido(id, S, res);
+}
+}
+
+Process Servidor [id: 0..1]
+{ text sec, res;
+int aux;
+while (true)
+{ Admin.Sig(aux, sec);
+res = AnalizarSec(sec);
+Admin.Resultado(aux, res);
+}
+}
+
+
+Monitor Admin {
+ Cola C;
+ Cond espera[N]; // Lo unico que cambia es esto
+ Cond HayPedido;
+ text res[N];
+ Procedure Pedido (IdC: in int; S: in text; R: out text)
+ { push (C, (IdC,S) );
+ signal (HayPedido);
+ wait (espera[IdC]); // Aca
+ R = res[IdC];
+ }
+ Procedure Sig (IdC: out int; S: out text)
+ { while (empty (C)) wait (HayPedido);
+ pop (C, (IdC, S));
+ }
+ Procedure Resultado (IdC: in int; R: in text)
+ { res[IdC] = R;
+ signal (espera[IdC]); // Y aca
+ }
+}
+
+```

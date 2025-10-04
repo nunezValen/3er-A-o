@@ -339,8 +339,6 @@ Process Persona[0..N-1]{
 
 Process Autoridad(){
     while true{
- 
-    Mesa.EsperarLlegada()
     Mesa.DarAcceso()
     }   
 }
@@ -359,39 +357,29 @@ Monitor Mesa{
     int totalEsp
 
     Procedure Llegada(esPrioritario: IN bool){
-
-        if(!libre){ 
-            if(esPrioritario){  
-                totalPri++
-                wait(prioridad) // Si esta ocupado y tengo prioridad me agrego a una cola aparte
-            } else {
-                totalEsp++
-                wait(esperando) // Si no tengo prioridad me agrego a la comun
-            }
-        }
-        libre = false
         signal(autoridad)
-        wait(confirmacion)
-    }
-
-    Procedure EsperarLlegada(){
-        if(libre){
-            wait(autoridad) // Si no llego nadie me duermo
+        if(esPrioritario){  
+            totalPri++
+            wait(prioridad) // Si esta ocupado y tengo prioridad me agrego a una cola aparte
+        } else {
+            totalEsp++
+            wait(esperando) // Si no tengo prioridad me agrego a la comun
         }
     }
+    
 
     Procedure DarAcceso(){
-        signal(confirmacion)
-        wait(salida)
-        if(totalPri>0){
+        if (totalPri == 0 AND totalEsp == 0){
+            wait(autoridad) // Si no llego nadie me duermos
+        } 
+        if(totalPri>0){ // Veo si hay en cual cola hay gente
             totalPri--
             signal(prioridad)
-        } elif(totalEsp>0){
+        } else{
             totalEsp--
             signal(esperando)
-        } else {
-            libre = true
-        } 
+        }
+        wait(salida)
 
     }
 

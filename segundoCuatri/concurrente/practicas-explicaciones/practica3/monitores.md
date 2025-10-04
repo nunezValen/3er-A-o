@@ -582,6 +582,7 @@ Process Partido[id:1..2]{
 Monitor Equipo[1..4]{
     int cant = 0;
     cond esperando;
+    int canchaAux = -1
 
     Procedure Llegar(cancha: OUT int){
         cant++
@@ -679,15 +680,10 @@ Process Profesora{
 
 
 ```java
-Monitor Preceptor{
+Process Preceptor{
     txt enunciado
-    cond esperando
 
-    Procedure RecibirEnunciado(enunciado: OUT txt){
-        enunciado = this.enunciado
-    }
-
-
+    Examen.EntregarEnunciados(enunciado)
 }
 ```
 
@@ -700,21 +696,16 @@ Monitor Examen{
     cond esperandoCompañeros
     cond profesora
     cond esperandoCorreccion
+    txt enunciado
 
-
-    Procedure algo (aux : OUT int){
-        if ( total < 10){
-            wait(a)
-        } 
-    }
 
     Procedure Llegar(enunciado: OUT txt){
         totalAlumnos++
         if (totalAlumnos < 45){
             wait(esperandoCompañeros)
         } else {
-            Preceptor.RecibirEnunciado(enunciado)
-            signal_all(esperandoCompañeros)
+            signal(preceptor)
+            wait(enunciado)
         }
     }
 
@@ -739,6 +730,14 @@ Monitor Examen{
     Procedure EnviarNota(id: IN int; nota: IN int){
         notas[id] = nota
         signal(esperandoCorreccion)
+    }
+
+    Procedure EntregarEnunciados(e: IN txt){
+        if(totalAlumnos<45){
+            wait(preceptor)
+        }
+        enunciado = e
+        signal_all(esperandoCompañeros)
     }
 
 }

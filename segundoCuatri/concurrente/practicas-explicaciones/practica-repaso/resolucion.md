@@ -20,6 +20,7 @@ cargar la SUBE en la terminal t
 ### Resolucion a
 
 ```java
+sem cola
 sem mutex = 1
 sem espera[N] = ([N] 0)
 int siguiente = -1
@@ -32,7 +33,9 @@ Process Persona[id:0..N-1]{
         libre = false // Si esta libre lo uso
         V(mutex) // Libero el semaforo porque ya cambie la variable libre
     } else {
+        P(cola)
         cola.push(id) // si no esta libre encolo mi id
+        V(cola)
         V(mutex)
         P(espera[id]) // y espero a que en el arreglo en la posicion de mi id se libere
     }
@@ -132,7 +135,9 @@ Process Persona[id:0..N-1]{
         
         V(mutex) // Libero el semaforo porque ya cambie la variable libre
     } else {
+        P(semCola)
         orden.push(id) // si no esta libre encolo mi id
+        V(semCola)
         V(mutex)
         P(espera[id]) // y espero a que en el arreglo en la posicion de mi id se libere
 
@@ -206,8 +211,6 @@ Process Worker[id:0..7-1]{
 ### Solucion alternativa ya que no me gusto que para cada cosa tenga que bloquear
 
 
-
-
 ```java
 sem suma
 array transacciones[10000];
@@ -245,10 +248,67 @@ Process Worker[id:0..7]{
         print(resultados)
     }
     V(mutex)
+}
+
+```
+
+## Ejercicio 3
+
+Implemente una solución para el siguiente problema. Se debe simular el uso de una máquina
+expendedora de gaseosas con capacidad para 100 latas por parte de U usuarios. Además, existe un
+repositor encargado de reponer las latas de la máquina. Los usuarios usan la máquina según el orden
+de llegada. Cuando les toca usarla, sacan una lata y luego se retiran. En el caso de que la máquina se
+quede sin latas, entonces le debe avisar al repositor para que cargue nuevamente la máquina en forma
+completa. Luego de la recarga, saca una botella y se retira. Nota: maximizar la concurrencia; mientras
+se reponen las latas se debe permitir que otros usuarios puedan agregarse a la fila.
 
 
+```java
+cola siguiente
+sem seguir[U] = ([U]0)
+sem mutex = 1
+sem EsperandoRellenado = 1
+sem relleno = 0
+int cantidad = 100
 
+Process Usuario[id:0..U-1]{
+    P(mutex)
+    if(!libre){
+        siguiente.push(id)
+        V(mutex)
+        P(seguir[id]) // Si no esta libre me encolo y espero que me llamen
+        
+    }  else {
+        libre = false
+        V(mutex)
+    }
+    if(cantidad == 0){ // si NO quedan latas
+        V(relleno) // Despierto al rellenador
+        P(esperandoRellenado) // Espero al rellenado
+    }
 
+    cantidad-- // tomo gaseosa
+  
+
+    P(mutex)
+    if(!siguiente.empty()){
+       V(seguir[siguiente.pop()]) // Si hay alguien esperando lo despierto a él 
+    } else {
+        libre = true // Si no dejo libre en true para el proximo
+    }
+
+}
+
+Process Rellenador(){
+    while(true){
+
+        P(relleno) // Espero que me avisen que tengo que rellenar
+
+        cantidad = 100
+        cantidad -- // Tomo una
+        V(esperandoLlenado)
+    
+    }
 }
 
 ```
@@ -292,6 +352,7 @@ Process Autoridad(){
 Monitor Mesa{
     cond esperando
     cond autoridad
+    cond salida
     cond prioridad
     cond confirmacion
     int totalPri
@@ -321,16 +382,21 @@ Monitor Mesa{
 
     Procedure DarAcceso(){
         signal(confirmacion)
-    }
-
-    Procedure Salir(){
+        wait(salida)
         if(totalPri>0){
+            totalPri--
             signal(prioridad)
         } elif(totalEsp>0){
+            totalEsp--
             signal(esperando)
         } else {
             libre = true
-        }
+        } 
+
+    }
+
+    Procedure Salir(){
+       signal(salida)
     }
 
 }
@@ -338,7 +404,121 @@ Monitor Mesa{
 ```
 
 
+### usar libre solo cuando no hay admin
+
+
 
 ## Ejercicio 2
 
 
+2-Resolver el siguiente problema. En una empresa trabajan 20 vendedores ambulantes que forman 5
+equipos de 4 personas cada uno (cada vendedor conoce previamente a qué equipo pertenece). Cada
+equipo se encarga de vender un producto diferente. Las personas de un equipo se deben juntar antes. 
+de comenzar a trabajar. Luego cada integrante del equipo trabaja independientemente del resto
+vendiendo ejemplares del producto correspondiente. Al terminar cada integrante del grupo debe
+conocer la cantidad de ejemplares vendidos por el grupo. Nota: maximizar la concurrencia
+
+
+```java
+
+Process Vendedor[id:0..19]{
+    int equipo = ...
+    int total
+
+
+    Equipo[equipo].Llegar()
+    vender(total)
+    Equipo[equipo].ConseguirTotal(totalGrupo, total)
+
+
+
+}
+```
+
+
+```java
+int cantVendedores = 0
+cond esperando
+totaEquipo = 0
+
+Monitor Equipo[id:0..3]{
+
+    Procedure Llegar(){
+        cantVendedores++
+        if(CantVendedores == 5){
+            wait(esperando)
+        } else {
+            signal_all(esperando)
+            cantVendedores = 0
+        }
+    }
+
+    Procedure ConseguirTotal(totalGrupo OUT int; total IN int){
+        cantVendedores++
+        totalEquipo += total
+        if(CantVendedores != 5){
+            wait(esperando)
+        } else {
+            signal_all(esperando)
+        }
+        totalGrupo = totalEquipo
+    }
+
+}
+
+
+
+```
+
+
+
+
+
+## Ejercicio 3 
+
+Resolver el siguiente problema. En una montaña hay 30 escaladores que en una parte de la subida
+deben utilizar un único paso de a uno a la vez y de acuerdo con el orden de llegada al mismo. Nota:
+sólo se pueden utilizar procesos que representen a los escaladores; cada escalador usa sólo una vez
+el paso
+
+
+```java
+
+Process Escalador[id:1..30]{
+    Paso.Pasar()
+    // PASO
+    Paso.Salir()
+}
+
+```
+
+
+```java
+cond esperando;
+bool libre = true
+int cantEsperando
+
+Monitor Paso{
+
+    Pasar(){
+        if(!libre){
+            cantEsperando++
+            wait(esperando)
+        } else {
+            libre = false
+        }
+    }
+
+    Salir(){
+        if(cantEsperando>0){
+            cantEsperando--
+            signal(esperando)
+        } else {
+            libre = true
+        }
+    }
+
+}
+```
+
+# TODOS LOS EJERCICIOS BIEN SEGUN EL AYUDANTE.

@@ -589,9 +589,10 @@ Monitor Equipo[1..4]{
             wait(espernado) // Espero que llegue todo mi equipo
         } 
         else{
-            Admin.ConseguirCancha(cancha) // Consigo numero de cancha
+            Admin.ConseguirCancha(canchaAux) // Consigo numero de cancha
             signal_all(esperando) // Despierto a todos
         }
+        cancha = canchaAux
     }
 }
 ```
@@ -641,3 +642,174 @@ Monitor Cancha[id: 1..2]{
 ```
 
 # CONSULTAR QUE PASA SI HAGO SIGNAL EN COLAS VACIAS.
+
+
+## Ejercicio 9
+
+En un examen de la secundaria hay un preceptor y una profesora que deben tomar un examen escrito a 45 alumnos. El preceptor se encarga de darle el enunciado del examen a los alumnos cuando los 45 han llegado (es el mismo enunciado para todos). La profesora se encarga de ir corrigiendo los exámenes de acuerdo con el orden en que los alumnos van entregando. Cada alumno al llegar espera a que le den el enunciado, resuelve el examen, y al terminar lo deja para que la profesora lo corrija y le envíe la nota. Nota: maximizar la concurrencia; todos los procesos deben terminar su ejecución; suponga que la profesora tiene una función
+corregirExamen que recibe un examen y devuelve un entero con la nota. 
+
+
+```java
+Process Alumno[id:0..44]{
+    int nota
+    txt examen
+
+    Examen.Llegar()
+    // Resolver examen
+    Examen.Entregar(examen,nota)
+
+}
+```
+
+```java
+Process Profesora{
+    txt examen
+    int nota
+    int id
+    for 1 to 45 do {
+        Examen.recibir(examen,id)
+
+        corregirExamen(examen,nota)
+
+        Examen.enviarNota(examen,nota,id)
+    }
+}
+```
+
+
+```java
+Monitor Preceptor{
+    txt enunciado
+    cond esperando
+
+    Procedure RecibirEnunciado(enunciado: OUT txt){
+        enunciado = this.enunciado
+    }
+
+
+}
+```
+
+```java
+Monitor Examen{
+    totalAlumnos = 0
+    bool libre
+    int notas[45] = ([45] 0)
+    int esperando = 0
+    cond esperandoCompañeros
+    cond profesora
+    cond esperandoCorreccion
+
+
+    Procedure algo (aux : OUT int){
+        if ( total < 10){
+            wait(a)
+        } 
+    }
+
+    Procedure Llegar(enunciado: OUT txt){
+        totalAlumnos++
+        if (totalAlumnos < 45){
+            wait(esperandoCompañeros)
+        } else {
+            Preceptor.RecibirEnunciado(enunciado)
+            signal_all(esperandoCompañeros)
+        }
+    }
+
+
+    Procedure EntregarExamen(examen: IN txt; nota: OUT int; ID: IN int){
+        cola.push(id,nota)
+        signal(profesora)
+        wait(esperandoCorreccion)
+        nota = notas[id]
+    }
+    
+
+    Procedure Recibir(examen: OUT txt; id: OUT int){
+
+        if(cola.empty()){
+            wait(profesora)
+        } 
+
+        cola.pop(id,examen)
+    }
+
+    Procedure EnviarNota(id: IN int; nota: IN int){
+        notas[id] = nota
+        signal(esperandoCorreccion)
+    }
+
+}
+```
+
+##  Ejercicio 10
+
+En un parque hay un juego para ser usada por N personas de a una a la vez y de acuerdo al orden en que llegan para solicitar su uso. Además, hay un empleado encargado de desinfectar el juego durante 10 minutos antes de que una persona lo use. Cada persona al llegar espera hasta
+que el empleado le avisa que puede usar el juego, lo usa por un tiempo y luego lo devuelve.
+Nota: suponga que la persona tiene una función Usar_juego que simula el uso del juego; y el empleado una función Desinfectar_Juego que simula su trabajo. Todos los procesos deben
+terminar su ejecución. 
+
+```java
+Process Persona[1..N]{
+    Juego.Llegar()
+    Usar_juego()
+    Juego.Salir()
+}
+
+
+```
+
+```java
+Process Empleado{
+    for 1 to N {
+        Juego.Esperar()
+        desinfectar_juego()
+        Juego.Listo()
+    }
+}
+```
+
+
+```java
+Monitor Juego{
+    bool ocupado = false
+    int esperando
+    cond esperandoLimpieza
+    cond empleado
+    cond colaParaJuego
+
+    Procedure LLegar(){
+        if (ocupado){
+            esperando++
+            wait(colaParaJuego)
+        }else {
+            ocupado = true
+            signal(empleado)
+        }
+        wait(esperandoLimpieza)
+    }
+
+    Procedure Esperar(){
+        if (esperando<1){
+            wait(empleado)
+        } 
+    }
+
+
+    Procedure Listo(){
+        signal(esperandoLimpieza)
+    }
+
+    Procedure Salir(){
+        if(esperando  > 1){
+            esperando--
+            signal(colaParaJuego)
+        } else {
+            ocupado = false
+        }
+    }
+}
+```
+

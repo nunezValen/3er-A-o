@@ -95,20 +95,20 @@ Process Persona[id:0..49]{
 
     txt consulta = ...
 
-    Mail[tipoConsulta].Enviar(consulta,resultado)
+    Mail[tipoConsulta].Enviar(consulta,resultado,id)
 
 }
 
 
 Process Empleado{
      txt consulta
-
+     int id
     
     while(true){
 
-       Mail[1].AtenderConsulta(consulta)
+       Mail[1].AtenderConsulta(consulta,id)
        // Conseguir resultado
-       Mail[1].DevolverResultado(resultado)
+       Mail[1].DevolverResultado(resultado,id)
 
     }
 
@@ -116,16 +116,17 @@ Process Empleado{
 
 Process Supervisor {
 
-    txt consulta
-
+     txt consulta
+     int id
     
     while(true){
 
-       Mail[0].AtenderConsulta(consulta)
+       Mail[1].AtenderConsulta(consulta,id)
        // Conseguir resultado
-       Mail[0].DevolverResultado(resultado)
+       Mail[1].DevolverResultado(resultado,id)
 
     }
+
 }
 
 
@@ -133,31 +134,31 @@ Process Supervisor {
 Monitor Mail[0..1]{
 
 
-    txt res 
+    txt res[50] 
     cola consultas
     cond esperandoConsultas
     cond esperandoResultado
 
-    Procedure Enviar(consulta : IN txt; resultado : OUT txt){
+    Procedure Enviar(consulta : IN txt; resultado : OUT txt;id : IN txt){
 
-        consultas.push(consulta)
+        consultas.push(consulta,id)
         signal(esperandoConsultas)
         wait(esperandoResultado)
-        resultado = res
+        resultado = res[id]
     
     }
 
-    AtenderConsulta(consulta: OUT txt){
+    AtenderConsulta(consulta: OUT txt; id: OUT int){
 
         if(consultas.isEmpty()){
             wait(esperandoConsultas)
         }
-        consulta = consultas.pop()
+        consulta,id = consultas.pop()
     }
 
-    DevolverResultado(resultado: IN txt){
+    DevolverResultado(resultado: IN txt; id: IN int){
 
-        res = resultado
+        res[id] = resultado
         signal(esperandoResultado)
     }
 

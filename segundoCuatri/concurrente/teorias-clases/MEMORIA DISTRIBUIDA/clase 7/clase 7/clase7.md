@@ -94,3 +94,5 @@ IN OPNAME (parametros formales) -> S; ni
 
 - Las partes entre IN y NI se llaman operaciones de guardas.
 
+
+

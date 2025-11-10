@@ -184,7 +184,6 @@ Process Admin{
             }
         }
     }
-
 }
 
 
@@ -351,6 +350,7 @@ Process Empleado{
     text ticket
     
     While (true){
+        receive llegada(idCli)
         // Uso if no deterministico para que no haya prioridad ni orden.
         // Si hay alguien esperando para pagar
         if(!pago.isEmpty() )-> {
@@ -984,14 +984,13 @@ b)
 ```js
 
 Process Cliente[id:0..N-1] {
-    Empleado!Llegada(id)
+    Empleado!Llegada()
     Empleado?Subir()
     // Esta un rato en el simulador
     Empleado!Bajar()
 }
 
 Process Empleado{
-    int idCli
 
     for i: 0 to n-N-1{
         // Recibo la llegada de un cliente

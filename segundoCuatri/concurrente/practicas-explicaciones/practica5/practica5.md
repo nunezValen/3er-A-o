@@ -700,7 +700,7 @@ Procedure Juego IS
             ID := id
         END ID
 
-        // Recibo la llegada de mi equipo y les digo que comiencen.
+        // Recibo la llegada de mi equipo y les digo que comiencen. Esto se podria cambiar por un proceso barreara 
         FOR (i : 1 to 4) LOOP
             ACCEPT Llegada
         END LOOP
@@ -708,7 +708,7 @@ Procedure Juego IS
             ACCEPT Comenzar
         END LOOP
 
-        // Recibo las monedas del equipo
+        // Recibo las monedas del equipo. Esto podria ser un proceso contador(Debe saber que equipo es)
         FOR (i : 1 to 4) LOOP
             ACCEPT Monedas(valor : IN int) DO
                 totalEquipo := totalEquipo + valor
